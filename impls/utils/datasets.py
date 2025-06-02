@@ -237,8 +237,13 @@ class GCDataset:
             self.config['actor_geom_sample'],
         )
 
-        batch['value_goals'] = self.get_observations(value_goal_idxs)
-        batch['actor_goals'] = self.get_observations(actor_goal_idxs)
+        if self.config['oraclerep']:
+            goal_selector = self.get_oraclereps
+        else:
+            goal_selector = self.get_observations
+
+        batch['value_goals'] = goal_selector(value_goal_idxs)
+        batch['actor_goals'] = goal_selector(actor_goal_idxs)
         successes = (idxs == value_goal_idxs).astype(float)
         batch['masks'] = 1.0 - successes
         batch['rewards'] = successes - (1.0 if self.config['gc_negative'] else 0.0)
@@ -295,6 +300,13 @@ class GCDataset:
             return jax.tree_util.tree_map(lambda arr: arr[idxs], self.dataset['observations'])
         else:
             return self.get_stacked_observations(idxs)
+
+    def get_oraclereps(self, idxs):
+        """Identical to `get_observations`, but returns oracle representations instead of raw observation vectors."""
+        try:
+            return jax.tree_util.tree_map(lambda arr: arr[idxs], self.dataset['oracle_reps'])
+        except KeyError:
+            raise ValueError("Oracle representation is only supported in locomotion and navigation environments.")
 
     def get_stacked_observations(self, idxs):
         """Return the frame-stacked observations for the given indices."""

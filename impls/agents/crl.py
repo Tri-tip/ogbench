@@ -204,6 +204,7 @@ class CRLAgent(flax.struct.PyTreeNode):
         ex_observations,
         ex_actions,
         config,
+        ex_goals=None,
     ):
         """Create a new agent.
 
@@ -212,11 +213,14 @@ class CRLAgent(flax.struct.PyTreeNode):
             ex_observations: Example batch of observations.
             ex_actions: Example batch of actions. In discrete-action MDPs, this should contain the maximum action value.
             config: Configuration dictionary.
+            ex_goals: Example batch of goals. Only necessary for oraclerep environments.
         """
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
 
-        ex_goals = ex_observations
+        if not config['oraclerep']:
+            ex_goals = ex_observations
+
         if config['discrete']:
             action_dim = ex_actions.max() + 1
         else:
@@ -322,6 +326,7 @@ def get_config():
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
+            oraclerep=True,  # Whether to use oracle representations.
             value_p_curgoal=0.0,  # Probability of using the current state as the value goal.
             value_p_trajgoal=1.0,  # Probability of using a future state in the same trajectory as the value goal.
             value_p_randomgoal=0.0,  # Probability of using a random state as the value goal.

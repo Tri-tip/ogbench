@@ -339,6 +339,7 @@ def get_config():
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='HGCDataset',  # Dataset class name.
+            oraclerep=True,  # Whether to use oracle representations.
             value_p_curgoal=0.2,  # Probability of using the current state as the value goal.
             value_p_trajgoal=0.5,  # Probability of using a future state in the same trajectory as the value goal.
             value_p_randomgoal=0.3,  # Probability of using a random state as the value goal.

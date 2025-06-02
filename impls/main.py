@@ -11,8 +11,6 @@ import wandb
 from absl import app, flags
 from agents import agents
 from ml_collections import config_flags
-
-from utils.dataset_oracle import GCOracleDataset
 from utils.datasets import Dataset, GCDataset, HGCDataset
 from utils.env_utils import make_env_and_datasets
 from utils.evaluation import evaluate
@@ -23,7 +21,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
-flags.DEFINE_string('env_name', 'cube-single-play-oraclerep-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('env_name', 'antmaze-large-navigate-oraclerep-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('save_dir', 'exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
@@ -40,9 +38,8 @@ flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
-flags.DEFINE_boolean("oracle_rep", True, "Whether oracle representations are being used")
 
-config_flags.DEFINE_config_file('agent', 'agents/gcivl_oracle.py', lock_config=False)
+config_flags.DEFINE_config_file('agent', 'agents/crl.py', lock_config=False)
 
 
 def main(_):
@@ -52,7 +49,7 @@ def main(_):
 
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
-    flag_dict = get_flag_dict()
+    # flag_dict = get_flag_dict()
     # with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
     #     json.dump(flag_dict, f)
 
@@ -63,7 +60,6 @@ def main(_):
     dataset_class = {
         'GCDataset': GCDataset,
         'HGCDataset': HGCDataset,
-        'GCOracleDataset': GCOracleDataset
     }[config['dataset_class']]
     train_dataset = dataset_class(Dataset.create(**train_dataset), config)
     if val_dataset is not None:
@@ -79,13 +75,13 @@ def main(_):
         example_batch['actions'] = np.full_like(example_batch['actions'], env.action_space.n - 1)
 
     agent_class = agents[config['agent_name']]
-    if FLAGS.oracle_rep:
+    if config['oraclerep']:
         agent = agent_class.create(
             FLAGS.seed,
             example_batch['observations'],
-            example_batch['actor_goals'],
             example_batch['actions'],
             config,
+            ex_goals=example_batch['actor_goals']
         )
     else:
         agent = agent_class.create(
