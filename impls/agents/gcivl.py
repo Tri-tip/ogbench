@@ -10,9 +10,6 @@ from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import GCActor, GCDiscreteActor, GCValue
 
-from impls.utils.encoders import gc_encoders
-
-
 class GCIVLAgent(flax.struct.PyTreeNode):
     """Goal-conditioned implicit V-learning (GCIVL) agent.
 
@@ -242,7 +239,7 @@ def get_config():
             alpha=10.0,  # AWR temperature.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
-            encoder='film_impala_debug',  # Visual encoder name (None, 'impala_small', etc.).
+            encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=True,  # Whether to use oracle representations.
