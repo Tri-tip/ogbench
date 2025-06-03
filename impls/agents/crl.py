@@ -228,14 +228,15 @@ class CRLAgent(flax.struct.PyTreeNode):
 
         # Define encoders.
         encoders = dict()
-        if config['encoder'] is not None:
-            gc_encoder = gc_encoders[config['encoder']]
-            encoders['critic_state'] = gc_encoder()
-            encoders['critic_goal'] = gc_encoder()
+        if config['gc_encoder'] is not None:
+            encoder_module = encoder_modules[config['standalone_encoder']]
+            gc_encoder = gc_encoders[config['gc_encoder']]
+            encoders['critic_state'] = encoder_module()
+            encoders['critic_goal'] = encoder_module()
             encoders['actor'] = gc_encoder()
             if config['actor_loss'] == 'awr':
-                encoders['value_state'] = gc_encoder()
-                encoders['value_goal'] = gc_encoder()
+                encoders['value_state'] = encoder_module()
+                encoders['value_goal'] = encoder_module()
 
         # Define value and actor networks.
         if config['discrete']:
@@ -248,6 +249,7 @@ class CRLAgent(flax.struct.PyTreeNode):
                 state_encoder=encoders.get('critic_state'),
                 goal_encoder=encoders.get('critic_goal'),
                 action_dim=action_dim,
+                oraclerep=config['oraclerep'],
             )
         else:
             critic_def = GCBilinearValue(
@@ -258,6 +260,7 @@ class CRLAgent(flax.struct.PyTreeNode):
                 value_exp=True,
                 state_encoder=encoders.get('critic_state'),
                 goal_encoder=encoders.get('critic_goal'),
+                oraclerep=config['oraclerep'],
             )
 
         if config['actor_loss'] == 'awr':
@@ -270,6 +273,7 @@ class CRLAgent(flax.struct.PyTreeNode):
                 value_exp=True,
                 state_encoder=encoders.get('value_state'),
                 goal_encoder=encoders.get('value_goal'),
+                oraclerep=config['oraclerep'],
             )
 
         if config['discrete']:
@@ -323,7 +327,8 @@ def get_config():
             actor_log_q=True,  # Whether to maximize log Q (True) or Q itself (False) in the actor loss.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
-            encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
+            standalone_encoder='impala_small',  # Visual encoder name (None, 'impala_small', etc.). Must be in `encoders.encoder_modules`.
+            gc_encoder='film_impala_small', # Goal-conditioned visual encoder name, for the actor. Must be in `encoders.gc_encoders`.
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=True,  # Whether to use oracle representations.

@@ -21,7 +21,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
-flags.DEFINE_string('env_name', 'visual-antmaze-medium-navigate-oraclerep-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('env_name', 'visual-antmaze-giant-navigate-oraclerep-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('save_dir', 'exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
@@ -32,14 +32,14 @@ flags.DEFINE_integer('eval_interval', 100000, 'Evaluation interval.')
 flags.DEFINE_integer('save_interval', 1000000, 'Saving interval.')
 
 flags.DEFINE_integer('eval_tasks', None, 'Number of tasks to evaluate (None for all).')
-flags.DEFINE_integer('eval_episodes', 20, 'Number of episodes for each task.')
+flags.DEFINE_integer('eval_episodes', 50, 'Number of episodes for each task.')
 flags.DEFINE_float('eval_temperature', 0, 'Actor temperature for evaluation.')
 flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.')
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
 
-config_flags.DEFINE_config_file('agent', 'agents/gcivl.py', lock_config=False)
+config_flags.DEFINE_config_file('agent', 'agents/crl.py', lock_config=False)
 
 
 def main(_):
@@ -119,7 +119,7 @@ def main(_):
             train_logger.log(train_metrics, step=i)
 
         # Evaluate agent.
-        if i == 100 or i % FLAGS.eval_interval == 0:
+        if i == 1 or i % FLAGS.eval_interval == 0:
             if FLAGS.eval_on_cpu:
                 eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
             else:

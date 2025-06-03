@@ -191,7 +191,7 @@ class GCEncoder(nn.Module):
         reps = jnp.concatenate(reps, axis=-1)
         return reps
 
-# individual encoders (take in a goal or a state)
+# individual encoders (take in a goal or a obs)
 encoder_modules = {
     'impala': ImpalaEncoder,
     'impala_debug': functools.partial(ImpalaEncoder, num_blocks=1, stack_sizes=(4, 4)),
@@ -199,7 +199,7 @@ encoder_modules = {
     'impala_large': functools.partial(ImpalaEncoder, stack_sizes=(64, 128, 128), mlp_hidden_dims=(1024,)),
 }
 
-# full gc encoders (take in (goal, state) args)
+# full gc encoders (take in (goal, obs) args)
 gc_encoders = {
     'impala_debug': GCEncoder(concat_encoder=encoder_modules['impala_debug']()),
     'impala_small': GCEncoder(concat_encoder=encoder_modules['impala_small']()),

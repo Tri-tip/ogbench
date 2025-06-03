@@ -342,6 +342,7 @@ class GCBilinearValue(nn.Module):
 
     hidden_dims: Sequence[int]
     latent_dim: int
+    oraclerep: bool = True # If true, does not encode goals; replaces with dense projection
     layer_norm: bool = True
     ensemble: bool = True
     value_exp: bool = False
@@ -367,7 +368,7 @@ class GCBilinearValue(nn.Module):
         """
         if self.state_encoder is not None:
             observations = self.state_encoder(observations)
-        if self.goal_encoder is not None:
+        if self.goal_encoder is not None and not self.oraclerep:
             goals = self.goal_encoder(goals)
 
         if actions is None:
