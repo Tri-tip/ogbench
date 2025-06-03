@@ -204,7 +204,7 @@ class CRLAgent(flax.struct.PyTreeNode):
         ex_observations,
         ex_actions,
         config,
-        ex_goals=None,
+        ex_goals=None
     ):
         """Create a new agent.
 
@@ -213,7 +213,7 @@ class CRLAgent(flax.struct.PyTreeNode):
             ex_observations: Example batch of observations.
             ex_actions: Example batch of actions. In discrete-action MDPs, this should contain the maximum action value.
             config: Configuration dictionary.
-            ex_goals: Example batch of goals. Only necessary for oraclerep environments.
+            ex_goals: Example batch of goals. Only necessary if using a goal representation.
         """
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
