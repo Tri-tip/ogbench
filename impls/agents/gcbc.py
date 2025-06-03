@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 import optax
-from utils.encoders import GCEncoder, encoder_modules
+from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import GCActor, GCDiscreteActor
 
@@ -111,8 +111,8 @@ class GCBCAgent(flax.struct.PyTreeNode):
         # Define encoder.
         encoders = dict()
         if config['encoder'] is not None:
-            encoder_module = encoder_modules[config['encoder']]
-            encoders['actor'] = GCEncoder(concat_encoder=encoder_module())
+            gc_encoder = gc_encoders[config['encoder']]
+            encoders['actor'] = gc_encoder()
 
         # Define actor network.
         if config['discrete']:

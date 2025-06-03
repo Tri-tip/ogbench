@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 import optax
-from utils.encoders import GCEncoder, encoder_modules
+from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import GCActor, GCBilinearValue, GCDiscreteActor, GCDiscreteBilinearCritic
 
@@ -229,13 +229,13 @@ class CRLAgent(flax.struct.PyTreeNode):
         # Define encoders.
         encoders = dict()
         if config['encoder'] is not None:
-            encoder_module = encoder_modules[config['encoder']]
-            encoders['critic_state'] = encoder_module()
-            encoders['critic_goal'] = encoder_module()
-            encoders['actor'] = GCEncoder(concat_encoder=encoder_module())
+            gc_encoder = gc_encoders[config['encoder']]
+            encoders['critic_state'] = gc_encoder()
+            encoders['critic_goal'] = gc_encoder()
+            encoders['actor'] = gc_encoder()
             if config['actor_loss'] == 'awr':
-                encoders['value_state'] = encoder_module()
-                encoders['value_goal'] = encoder_module()
+                encoders['value_state'] = gc_encoder()
+                encoders['value_goal'] = gc_encoder()
 
         # Define value and actor networks.
         if config['discrete']:

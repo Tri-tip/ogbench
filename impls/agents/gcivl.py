@@ -6,9 +6,11 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 import optax
-from utils.encoders import GCEncoder, encoder_modules
+from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import GCActor, GCDiscreteActor, GCValue
+
+from impls.utils.encoders import gc_encoders
 
 
 class GCIVLAgent(flax.struct.PyTreeNode):
@@ -153,6 +155,7 @@ class GCIVLAgent(flax.struct.PyTreeNode):
         ex_observations,
         ex_actions,
         config,
+        ex_goals=None
     ):
         """Create a new agent.
 
@@ -161,11 +164,14 @@ class GCIVLAgent(flax.struct.PyTreeNode):
             ex_observations: Example batch of observations.
             ex_actions: Example batch of actions. In discrete-action MDPs, this should contain the maximum action value.
             config: Configuration dictionary.
+            ex_goals: Example batch of goals. Only necessary if using a goal representation.
         """
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
 
-        ex_goals = ex_observations
+        if not config['oraclerep']:
+            ex_goals = ex_observations
+
         if config['discrete']:
             action_dim = ex_actions.max() + 1
         else:
@@ -174,9 +180,9 @@ class GCIVLAgent(flax.struct.PyTreeNode):
         # Define encoders.
         encoders = dict()
         if config['encoder'] is not None:
-            encoder_module = encoder_modules[config['encoder']]
-            encoders['value'] = GCEncoder(concat_encoder=encoder_module())
-            encoders['actor'] = GCEncoder(concat_encoder=encoder_module())
+            gc_encoder = gc_encoders[config['encoder']]
+            encoders['value'] = gc_encoder()
+            encoders['actor'] = gc_encoder()
 
         # Define value and actor networks.
         value_def = GCValue(
@@ -236,7 +242,7 @@ def get_config():
             alpha=10.0,  # AWR temperature.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
-            encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
+            encoder='film_impala_debug',  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=True,  # Whether to use oracle representations.

@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 import optax
-from utils.encoders import GCEncoder, encoder_modules
+from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import MLP, GCActor, GCDiscreteActor, GCValue, Identity, LengthNormalize
 
@@ -222,7 +222,7 @@ class HIQLAgent(flax.struct.PyTreeNode):
 
         # Define (state-dependent) subgoal representation phi([s; g]) that outputs a length-normalized vector.
         if config['encoder'] is not None:
-            encoder_module = encoder_modules[config['encoder']]
+            encoder_module = gc_encoders[config['encoder']]
             goal_rep_seq = [encoder_module()]
         else:
             goal_rep_seq = []
