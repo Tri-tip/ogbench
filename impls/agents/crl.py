@@ -328,7 +328,7 @@ def get_config():
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
             standalone_encoder='impala_small',  # Visual encoder name (None, 'impala_small', etc.). Must be in `encoders.encoder_modules`.
-            gc_encoder='film_impala_small', # Goal-conditioned visual encoder name, for the actor. Must be in `encoders.gc_encoders`.
+            gc_encoder='concat_impala_small', # Goal-conditioned visual encoder name, for the actor. Must be in `encoders.gc_encoders`.
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=True,  # Whether to use oracle representations.

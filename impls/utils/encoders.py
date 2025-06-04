@@ -115,6 +115,7 @@ class FiLM(nn.Module):
         return gamma * obs + beta
 
 class FiLMImpalaEncoder(nn.Module):
+
     """IMPALA encoder using FiLM to fuse visual observations with oracle representations of goals."""
     width: int = 1
     stack_sizes: tuple = (16, 32, 32)
@@ -155,6 +156,50 @@ class FiLMImpalaEncoder(nn.Module):
         out = MLP(self.mlp_hidden_dims, activate_final=True, layer_norm=self.layer_norm)(out)
 
         return out
+
+class ConcatImpalaEncoder(nn.Module):
+    """Goal-conditioned IMPALA encoder, where goals are concatenated directly onto CNN FC layers."""
+
+    width: int = 1
+    stack_sizes: tuple = (16, 32, 32)
+    num_blocks: int = 2
+    dropout_rate: float = None
+    mlp_hidden_dims: Sequence[int] = (512,)
+    layer_norm: bool = False
+
+    def setup(self):
+        stack_sizes = self.stack_sizes
+        self.stack_blocks = [
+            ResnetStack(
+                num_features=stack_sizes[i] * self.width,
+                num_blocks=self.num_blocks,
+            )
+            for i in range(len(stack_sizes))
+        ]
+        if self.dropout_rate is not None:
+            self.dropout = nn.Dropout(rate=self.dropout_rate)
+
+    @nn.compact
+    def __call__(self, obs, goals, train=True, cond_var=None, goal_encoded=None):
+        obs = obs.astype(jnp.float32) / 255.0
+
+        conv_out = obs
+
+        for idx in range(len(self.stack_blocks)):
+            conv_out = self.stack_blocks[idx](conv_out)
+            if self.dropout_rate is not None:
+                conv_out = self.dropout(conv_out, deterministic=not train)
+
+        conv_out = nn.relu(conv_out)
+        if self.layer_norm:
+            conv_out = nn.LayerNorm()(conv_out)
+        out = conv_out.reshape((*obs.shape[:-3], -1))
+        out = jnp.concatenate([out, goals], axis=-1)
+
+        out = MLP(self.mlp_hidden_dims, activate_final=True, layer_norm=self.layer_norm)(out)
+
+        return out
+
 
 class GCEncoder(nn.Module):
     """Helper module to handle inputs to goal-conditioned networks.
@@ -209,4 +254,9 @@ gc_encoders = {
     'film_impala_debug': functools.partial(FiLMImpalaEncoder, num_blocks=1, stack_sizes=(4, 4)),
     'film_impala_small': functools.partial(FiLMImpalaEncoder, num_blocks=1),
     'film_impala_large': functools.partial(FiLMImpalaEncoder, stack_sizes=(64, 128, 128), mlp_hidden_dims=(1024,)),
+
+    # Same condition for concat encoders.
+    'concat_impala_debug': functools.partial(ConcatImpalaEncoder, num_blocks=1, stack_sizes=(4, 4)),
+    'concat_impala_small': functools.partial(ConcatImpalaEncoder, num_blocks=1),
+    'concat_impala_large': functools.partial(ConcatImpalaEncoder, stack_sizes=(64, 128, 128), mlp_hidden_dims=(1024,)),
 }

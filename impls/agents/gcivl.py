@@ -239,7 +239,7 @@ def get_config():
             alpha=10.0,  # AWR temperature.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
-            encoder='film_impala_small',  # Visual encoder name (None, 'impala_small', etc.).
+            encoder='concat_impala_small',  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=True,  # Whether to use oracle representations.
