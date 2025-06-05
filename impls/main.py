@@ -27,7 +27,7 @@ flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
 
 flags.DEFINE_integer('train_steps', 1000000, 'Number of training steps.')
-flags.DEFINE_integer('log_interval', 5000, 'Logging interval.')
+flags.DEFINE_integer('log_interval', 5, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 100000, 'Evaluation interval.')
 flags.DEFINE_integer('save_interval', 1000000, 'Saving interval.')
 
@@ -43,6 +43,8 @@ config_flags.DEFINE_config_file('agent', 'agents/gcivl_vib.py', lock_config=Fals
 
 
 def main(_):
+    rng = jax.random.PRNGKey(FLAGS.seed)
+
     # Set up logger.
     exp_name = get_exp_name(FLAGS.seed)
     setup_wandb(project='goalrep', group=FLAGS.run_group, name=exp_name)
@@ -109,8 +111,9 @@ def main(_):
         if i % FLAGS.log_interval == 0:
             train_metrics = {f'training/{k}': v for k, v in update_info.items()}
             if val_dataset is not None:
+                rng, val_rng = jax.random.split(rng)
                 val_batch = val_dataset.sample(config['batch_size'])
-                _, val_info = agent.total_loss(val_batch, grad_params=None)
+                _, val_info = agent.total_loss(val_batch, grad_params=None, rng=val_rng)
                 train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
             train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
             train_metrics['time/total_time'] = time.time() - first_time
@@ -119,7 +122,7 @@ def main(_):
             train_logger.log(train_metrics, step=i)
 
         # Evaluate agent.
-        if i == 1000 or i % FLAGS.eval_interval == 0:
+        if i == 1 or i % FLAGS.eval_interval == 0:
             if FLAGS.eval_on_cpu:
                 eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
             else:
