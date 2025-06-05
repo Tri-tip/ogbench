@@ -306,7 +306,7 @@ class GCDataset:
         try:
             return jax.tree_util.tree_map(lambda arr: arr[idxs], self.dataset['oracle_reps'])
         except KeyError:
-            raise ValueError("Oracle representation is only supported in locomotion and navigation environments.")
+            raise ValueError("Oracle representation is not supported in this environment.")
 
     def get_stacked_observations(self, idxs):
         """Return the frame-stacked observations for the given indices."""

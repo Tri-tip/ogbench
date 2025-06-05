@@ -4,7 +4,8 @@ from typing import Sequence
 import flax.linen as nn
 import jax.numpy as jnp
 
-from utils.networks import MLP
+from utils.networks import MLP, Identity
+from utils.goal_encoders import goal_encoders
 
 
 class ResnetStack(nn.Module):
