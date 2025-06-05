@@ -37,19 +37,24 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         compute the former and the current value function to compute the latter. This is similar to how double DQN
         mitigates overestimation bias.
         """
-        batch['value_goals'], goalrep_loss = self.network.select('goalrep')(batch['value_goals'], rng)
+        if self.config['sg_encoder']:
+            vib_in = jnp.concatenate([batch['value_goals'], batch['observations']], axis=-1)
+        else:
+            vib_in = batch['value_goals']
 
-        (next_v1_t, next_v2_t) = self.network.select('target_value')(batch['next_observations'], batch['value_goals'])
+        goal_reps, goalrep_loss = self.network.select('goalrep')(vib_in, rng)
+
+        (next_v1_t, next_v2_t) = self.network.select('target_value')(batch['next_observations'], goal_reps)
         next_v_t = jnp.minimum(next_v1_t, next_v2_t)
         q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_v_t
 
-        (v1_t, v2_t) = self.network.select('target_value')(batch['observations'], batch['value_goals'])
+        (v1_t, v2_t) = self.network.select('target_value')(batch['observations'], goal_reps)
         v_t = (v1_t + v2_t) / 2
         adv = q - v_t
 
         q1 = batch['rewards'] + self.config['discount'] * batch['masks'] * next_v1_t
         q2 = batch['rewards'] + self.config['discount'] * batch['masks'] * next_v2_t
-        (v1, v2) = self.network.select('value')(batch['observations'], batch['value_goals'], params=grad_params)
+        (v1, v2) = self.network.select('value')(batch['observations'], goal_reps, params=grad_params)
         v = (v1 + v2) / 2
 
         value_loss1 = self.expectile_loss(adv, q1 - v1, self.config['expectile']).mean()
@@ -66,12 +71,18 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
 
     def actor_loss(self, batch, grad_params, rng=None):
         """Compute the AWR actor loss."""
-        if self.config['actor_goalrep_grad']:
-            batch['actor_goals'], _ = self.network.select('goalrep')(batch['actor_goals'], rng)
+        if self.config['sg_encoder']:
+            vib_in = jnp.concatenate([batch['actor_goals'], batch['observations']], axis=-1)
         else:
-            batch['actor_goals'], _ = jax.lax.stop_gradient(self.network.select('goalrep')(batch['actor_goals'], rng))
-        v1, v2 = self.network.select('value')(batch['observations'], batch['actor_goals'])
-        nv1, nv2 = self.network.select('value')(batch['next_observations'], batch['actor_goals'])
+            vib_in = batch['actor_goals']
+
+        if self.config['actor_goalrep_grad']:
+            goal_reps, _ = self.network.select('goalrep')(vib_in, rng)
+        else:
+            goal_reps, _ = jax.lax.stop_gradient(self.network.select('goalrep')(vib_in, rng))
+
+        v1, v2 = self.network.select('value')(batch['observations'], goal_reps)
+        nv1, nv2 = self.network.select('value')(batch['next_observations'], goal_reps)
         v = (v1 + v2) / 2
         nv = (nv1 + nv2) / 2
         adv = nv - v
@@ -79,7 +90,7 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         exp_a = jnp.exp(adv * self.config['alpha'])
         exp_a = jnp.minimum(exp_a, 100.0)
 
-        dist = self.network.select('actor')(batch['observations'], batch['actor_goals'], params=grad_params)
+        dist = self.network.select('actor')(batch['observations'], goal_reps, params=grad_params)
         log_prob = dist.log_prob(batch['actions'])
 
         actor_loss = -(exp_a * log_prob).mean()
@@ -147,6 +158,9 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         temperature=1.0,
     ):
         """Sample actions from the actor."""
+        if self.config['sg_encoder']:
+            goals = jnp.concatenate([goals, observations], axis=-1)
+
         goals, _ = self.network.select('goalrep')(goals, seed)
         dist = self.network.select('actor')(observations, goals, temperature=temperature)
         actions = dist.sample(seed=seed)
@@ -175,8 +189,11 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
 
-        prev_goals = ex_observations
+        goal_in = ex_observations
         ex_goals = jnp.zeros((1, config['goalrep_dim']))
+        if config['sg_encoder']:
+            goal_in = jnp.concatenate([goal_in, ex_observations], axis=-1)
+
         goalrep_def = goal_encoders[config['goal_encoder']](
             encoder=MLP(
                 hidden_dims=config['value_hidden_dims'],
@@ -225,7 +242,7 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
             value=(value_def, (ex_observations, ex_goals)),
             target_value=(copy.deepcopy(value_def), (ex_observations, ex_goals)),
             actor=(actor_def, (ex_observations, ex_goals)),
-            goalrep=(goalrep_def, (prev_goals, jax.random.PRNGKey(0))),
+            goalrep=(goalrep_def, (goal_in, jax.random.PRNGKey(0))),
         )
         networks = {k: v[0] for k, v in network_info.items()}
         network_args = {k: v[1] for k, v in network_info.items()}
@@ -259,9 +276,10 @@ def get_config():
             discrete=False,  # Whether the action space is discrete.
             encoder=None,  # Visual encoder name (None, 'impala_small', etc.).
             goal_encoder='vib',
-            actor_goalrep_grad=False,
-            goalrep_dim = 256,
-            beta=0.01,
+            actor_goalrep_grad=False, # Whether the actor gradients flow through the VIB encoder.
+            goalrep_dim = 256, # Dimension of the VIB's latent dimension.
+            beta=0.01, # VIB strength hyperparameter.
+            sg_encoder=False, # Whether the ViB takes in (g) or (s, g).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=False,  # Whether to use oracle representations.
