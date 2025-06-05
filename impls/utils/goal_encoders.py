@@ -1,6 +1,5 @@
 import flax.linen as nn
 import jax.numpy as jnp
-import jax
 import distrax
 
 class VIBEncoder(nn.Module):

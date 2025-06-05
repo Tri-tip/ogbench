@@ -42,7 +42,7 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         else:
             vib_in = batch['value_goals']
 
-        goal_reps, goalrep_loss = self.network.select('goalrep')(vib_in, rng)
+        goal_reps, goalrep_loss = self.network.select('goalrep')(vib_in, rng, params=grad_params)
 
         (next_v1_t, next_v2_t) = self.network.select('target_value')(batch['next_observations'], goal_reps)
         next_v_t = jnp.minimum(next_v1_t, next_v2_t)
@@ -77,9 +77,9 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
             vib_in = batch['actor_goals']
 
         if self.config['actor_goalrep_grad']:
-            goal_reps, _ = self.network.select('goalrep')(vib_in, rng)
+            goal_reps, _ = self.network.select('goalrep')(vib_in, rng, params=grad_params)
         else:
-            goal_reps, _ = jax.lax.stop_gradient(self.network.select('goalrep')(vib_in, rng))
+            goal_reps, _ = self.network.select('goalrep')(vib_in, rng)
 
         v1, v2 = self.network.select('value')(batch['observations'], goal_reps)
         nv1, nv2 = self.network.select('value')(batch['next_observations'], goal_reps)
