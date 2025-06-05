@@ -13,7 +13,7 @@ from utils.networks import GCActor, GCDiscreteActor, GCValue, MLP
 from utils.goal_encoders import VIBEncoder, goal_encoders
 
 class GCIVLVIBAgent(flax.struct.PyTreeNode):
-    """Goal-conditioned implicit V-learning (GCIVL) agent.
+    """Goal-conditioned implicit V-learning (GCIVL) agent, modified to use a Variational Information Bottleneck.
 
     This is a variant of GCIQL that only uses a V function, without Q functions.
     """
@@ -175,19 +175,16 @@ class GCIVLVIBAgent(flax.struct.PyTreeNode):
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
 
-        if not config['oraclerep']:
-            ex_goals = ex_observations
-        if config['goal_encoder'] is not None:
-            prev_goals = ex_goals
-            ex_goals = jnp.zeros((1, config['goalrep_dim']))
-            goalrep_def = goal_encoders[config['goal_encoder']](
-                encoder=MLP(
-                    hidden_dims=config['value_hidden_dims'],
-                    layer_norm=config['layer_norm'],
-                ),
-                rep_dim=config['goalrep_dim'],
-                beta=config['beta']
-            )
+        prev_goals = ex_observations
+        ex_goals = jnp.zeros((1, config['goalrep_dim']))
+        goalrep_def = goal_encoders[config['goal_encoder']](
+            encoder=MLP(
+                hidden_dims=config['value_hidden_dims'],
+                layer_norm=config['layer_norm'],
+            ),
+            rep_dim=config['goalrep_dim'],
+            beta=config['beta']
+        )
 
         if config['discrete']:
             action_dim = ex_actions.max() + 1
@@ -264,7 +261,7 @@ def get_config():
             goal_encoder='vib',
             actor_goalrep_grad=False,
             goalrep_dim = 256,
-            beta=1.0,
+            beta=0.01,
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=False,  # Whether to use oracle representations.
