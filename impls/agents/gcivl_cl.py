@@ -29,10 +29,14 @@ class GCIVLCLAgent(flax.struct.PyTreeNode):
     def contrastive_loss(self, batch, grad_params):
         """Compute the contrastive value loss for the Q or V function."""
         batch_size = batch['observations'].shape[0]
+        if self.config['sg_encoder']:
+            crl_in = jnp.concatenate([batch['value_goals'], batch['observations']], axis=-1)
+        else:
+            crl_in = batch['value_goals']
 
         v, phi, psi = self.network.select('crl')(
             batch['observations'],
-            batch['value_goals'],
+            crl_in,
             actions=None,
             info=True,
             params=grad_params,
@@ -238,6 +242,8 @@ class GCIVLCLAgent(flax.struct.PyTreeNode):
 
         ex_goals = ex_observations if ex_goals is None else ex_goals
         goals_in = ex_goals
+        if config['sg_encoder']:
+            goals_in = jnp.concatenate([goals_in, ex_observations], axis=-1)
         ex_goals = jnp.zeros((1, config['goalrep_dim']))
 
         if config['discrete']:
@@ -327,7 +333,7 @@ def get_config():
             value_goalrep_grad=False, # Whether the value function gradients flow through the goal encoder.
             actor_goalrep_grad=False,  # Whether the actor gradients flow through the goal encoder.
             goalrep_dim=256,  # Dimension of the goal representation.
-            sg_encoder=False,  # Whether the goal encoder takes in (g) or (s, g).
+            sg_encoder=True,  # Whether the goal encoder takes in (g) or (s, g).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=False,  # Whether to use oracle representations.
