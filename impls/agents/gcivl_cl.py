@@ -8,10 +8,7 @@ import ml_collections
 import optax
 from utils.encoders import GCEncoder, encoder_modules, gc_encoders
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
-from utils.networks import GCActor, GCDiscreteActor, GCValue
-
-from impls.utils.networks import GCBilinearValue
-
+from utils.networks import GCActor, GCDiscreteActor, GCValue, GCBilinearValue
 
 class GCIVLCLAgent(flax.struct.PyTreeNode):
     """Goal-conditioned implicit V-learning (GCIVL) agent.
