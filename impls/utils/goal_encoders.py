@@ -25,7 +25,7 @@ class VIBEncoder(nn.Module):
 
         mean_term = (mean * mean).sum(axis=-1)
         sd_trace = jnp.sum(stds, axis=-1)
-        log_det_stds = jnp.log(jnp.prod(stds, axis=-1))
+        log_det_stds = jnp.sum(log_stds, axis=-1)
         kl = 0.5 * (mean_term + sd_trace - mean.shape[-1] - log_det_stds)
 
         return z, (self.beta * kl).mean()

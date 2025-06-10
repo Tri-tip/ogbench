@@ -39,7 +39,7 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
 
-config_flags.DEFINE_config_file('agent', 'agents/gcivl_vib.py', lock_config=False)
+config_flags.DEFINE_config_file('agent', 'agents/gcivl_hilp.py', lock_config=False)
 
 
 def main(_):
@@ -122,7 +122,7 @@ def main(_):
             train_logger.log(train_metrics, step=i)
 
         # Evaluate agent.
-        if i == 1 or i % FLAGS.eval_interval == 0:
+        if i == 10 or i % FLAGS.eval_interval == 0:
             if FLAGS.eval_on_cpu:
                 eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
             else:

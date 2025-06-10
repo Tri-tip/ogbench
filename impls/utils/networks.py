@@ -516,3 +516,43 @@ class GCIQEValue(nn.Module):
             return v, phi_s, phi_g
         else:
             return v
+
+class GCHilbertRepresentationValue(nn.Module):
+    """ Value function parameterized as the Euclidian distance between Hilbert representations of state & goal. """
+    hidden_dims: Sequence[int]
+    latent_dim: int
+    layer_norm: bool = True
+    ensemble: bool = True
+    state_encoder: nn.Module = None
+    goal_encoder: nn.Module = None
+
+    def setup(self):
+        mlp_module = MLP
+        if self.ensemble:
+            mlp_module = ensemblize(mlp_module, 2)
+
+        self.phi = mlp_module((*self.hidden_dims, self.latent_dim), activate_final=False, layer_norm=self.layer_norm)
+
+    def __call__(self, observations, goals=None):
+        """Return the value/critic function.
+        If both goals & obs are specified, then a scalar value will be returned.
+        If just observations are specified, then a representation vector `phi(obs)` will be returned.
+
+        """
+        if self.state_encoder is not None:
+            observations = self.state_encoder(observations)
+        if self.goal_encoder is not None and goals is not None:
+            goals = self.goal_encoder(goals)
+
+        if goals is not None:
+            # value function calculation
+            state_rep = self.phi(observations)
+            goal_rep = self.phi(goals)
+            diff = state_rep - goal_rep
+            v = jnp.linalg.norm(diff, axis=-1)
+            return v
+        else:
+            # just encoding an observation or goal
+            phi = self.phi(observations)
+            # if it's ensembled, then we need to mean across the ensemble dimension
+            return phi.mean(axis=0)
