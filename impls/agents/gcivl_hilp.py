@@ -280,7 +280,7 @@ def get_config():
             # Agent hyperparameters.
             agent_name='gcivl_hilp',  # Agent name.
             lr=3e-4,  # Learning rate.
-            batch_size=256,  # Batch size.
+            batch_size=1024,  # Batch size.
             actor_hidden_dims=(512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512),  # Value network hidden dimensions.
             hilbert_hidden_dims=(512, 512, 512), # Hilbert representation network hidden dimensions.

@@ -229,7 +229,7 @@ def get_config():
             # Agent hyperparameters.
             agent_name='gcivl',  # Agent name.
             lr=3e-4,  # Learning rate.
-            batch_size=256,  # Batch size.
+            batch_size=1024,  # Batch size.
             actor_hidden_dims=(512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
@@ -239,10 +239,10 @@ def get_config():
             alpha=10.0,  # AWR temperature.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
-            encoder='concat_impala_small',  # Visual encoder name (None, 'impala_small', etc.).
+            encoder=None,  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
-            oraclerep=True,  # Whether to use oracle representations.
+            oraclerep=False,  # Whether to use oracle representations.
             value_p_curgoal=0.2,  # Probability of using the current state as the value goal.
             value_p_trajgoal=0.5,  # Probability of using a future state in the same trajectory as the value goal.
             value_p_randomgoal=0.3,  # Probability of using a random state as the value goal.

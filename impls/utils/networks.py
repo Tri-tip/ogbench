@@ -5,6 +5,7 @@ import flax
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
+from jax.experimental import checkify
 
 
 def default_init(scale=1.0):
@@ -548,8 +549,8 @@ class GCHilbertRepresentationValue(nn.Module):
             # value function calculation
             state_rep = self.phi(observations)
             goal_rep = self.phi(goals)
-            diff = state_rep - goal_rep
-            v = jnp.linalg.norm(diff, axis=-1)
+            squared_dist = ((state_rep - goal_rep) ** 2).sum(axis=-1)
+            v = -jnp.sqrt(jnp.maximum(squared_dist, 1e-6))
             return v
         else:
             # just encoding an observation or goal
