@@ -317,6 +317,13 @@ class GCDataset:
             rets.append(jax.tree_util.tree_map(lambda arr: arr[cur_idxs], self.dataset['observations']))
         return jax.tree_util.tree_map(lambda *args: np.concatenate(args, axis=-1), *rets)
 
+    def get_boundary_batch(self):
+        """ Return the boundary batch: batch that encodes the relative min and max of each dimension of each key in the batch."""
+        transitions = self.dataset._dict
+        mins = jax.tree_util.tree_map(lambda x: jnp.min(x, axis=0), transitions)
+        maxs = jax.tree_util.tree_map(lambda x: jnp.max(x, axis=0), transitions)
+        return mins, maxs
+
 
 @dataclasses.dataclass
 class HGCDataset(GCDataset):

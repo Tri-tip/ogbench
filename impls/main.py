@@ -21,13 +21,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
-flags.DEFINE_string('env_name', 'cube-double-play-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('env_name', 'antmaze-medium-navigate-oraclerep-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('save_dir', 'exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
 
 flags.DEFINE_integer('train_steps', 1000000, 'Number of training steps.')
-flags.DEFINE_integer('log_interval', 5000, 'Logging interval.')
+flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 100000, 'Evaluation interval.')
 flags.DEFINE_integer('save_interval', 1000000, 'Saving interval.')
 
@@ -39,7 +39,7 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
 
-config_flags.DEFINE_config_file('agent', 'agents/gcivl_hilp.py', lock_config=False)
+config_flags.DEFINE_config_file('agent', 'agents/gcivl_norm.py', lock_config=False)
 
 
 def main(_):
@@ -77,13 +77,16 @@ def main(_):
         example_batch['actions'] = np.full_like(example_batch['actions'], env.action_space.n - 1)
 
     agent_class = agents[config['agent_name']]
-    if config['oraclerep']:
+    ex_goals = example_batch['actor_goals'] if config['oraclerep'] else None
+
+    if 'norm' in config['agent_name']:
         agent = agent_class.create(
             FLAGS.seed,
             example_batch['observations'],
             example_batch['actions'],
+            train_dataset.get_boundary_batch(),
             config,
-            ex_goals=example_batch['actor_goals']
+            ex_goals=ex_goals
         )
     else:
         agent = agent_class.create(
@@ -91,6 +94,7 @@ def main(_):
             example_batch['observations'],
             example_batch['actions'],
             config,
+            ex_goals=ex_goals
         )
 
     # Restore agent.
@@ -122,7 +126,7 @@ def main(_):
             train_logger.log(train_metrics, step=i)
 
         # Evaluate agent.
-        if i == 10 or i % FLAGS.eval_interval == 0:
+        if i == 5000 or i % FLAGS.eval_interval == 0:
             if FLAGS.eval_on_cpu:
                 eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
             else:
