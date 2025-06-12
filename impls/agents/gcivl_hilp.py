@@ -296,7 +296,7 @@ def get_config():
             value_goalrep_grad=False,  # Whether the value function gradients flow through the goal encoder.
             actor_goalrep_grad=False,  # Whether the actor gradients flow through the goal encoder.
             goalrep_dim=256,  # Dimension of the goal representation.
-            norm=True,
+            norm=False,
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=False,  # Whether to use oracle representations.

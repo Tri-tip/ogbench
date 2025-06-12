@@ -56,10 +56,11 @@ class Dataset(FrozenDict):
         if freeze:
             jax.tree_util.tree_map(lambda arr: arr.setflags(write=False), data)
         if norm:
-            mins, maxs = jax.tree_util.tree_map(lambda x: np.min(x, axis=0), data), jax.tree_util.tree_map(
-                lambda x: np.max(x, axis=0), data)
-            diff = jax.tree_util.tree_map(lambda max_val, min_val: max_val - min_val, maxs, mins)
-            data = jax.tree_util.tree_map(lambda batch, norm_factor: batch / norm_factor, data, diff)
+            mins, maxs = np.min(data['observations'], axis=0), np.max(data['observations'], axis=0)
+            diff = maxs - mins
+            data['observations'] = data['observations'] / diff
+            if 'next_observations' in data:
+                data['next_observations'] = data['observations'] / diff
         else:
             diff = None
         return cls(diff, data)

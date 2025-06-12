@@ -76,9 +76,7 @@ def evaluate(
         goal = info.get('goal')
         if diff is not None:
             if not config['oraclerep']:
-                goal = goal / diff['observations']
-            else:
-                goal = goal / diff['oracle_reps']
+                goal = goal / diff
 
         goal_frame = info.get('goal_rendered')
         done = False
@@ -86,7 +84,7 @@ def evaluate(
         render = []
         while not done:
             if diff is not None:
-                observation = observation / diff['observations']
+                observation = observation / diff
             action = actor_fn(observations=observation, goals=goal, temperature=eval_temperature)
             action = np.array(action)
             if not config.get('discrete'):
