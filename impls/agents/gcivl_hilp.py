@@ -43,8 +43,8 @@ class GCIVLHILPAgent(flax.struct.PyTreeNode):
         (v1, v2) = self.network.select('hilbert')(batch['observations'], batch['value_goals'], params=grad_params)
         v = (v1 + v2) / 2
 
-        value_loss1 = self.expectile_loss(adv, q1 - v1, self.config['expectile']).mean()
-        value_loss2 = self.expectile_loss(adv, q2 - v2, self.config['expectile']).mean()
+        value_loss1 = self.expectile_loss(adv, q1 - v1, self.config['hilp_expectile']).mean()
+        value_loss2 = self.expectile_loss(adv, q2 - v2, self.config['hilp_expectile']).mean()
         value_loss = value_loss1 + value_loss2
 
         return value_loss, {
@@ -288,6 +288,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
+            hilp_expectile=0.7, # IQL expectile for HILP value function.
             alpha=10.0,  # AWR temperature.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
