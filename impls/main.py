@@ -21,7 +21,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
-flags.DEFINE_string('env_name', 'antmaze-medium-navigate-oraclerep-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('env_name', 'antmaze-medium-navigate-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('save_dir', 'exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
@@ -39,7 +39,7 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
 
-config_flags.DEFINE_config_file('agent', 'agents/gcivl_norm.py', lock_config=False)
+config_flags.DEFINE_config_file('agent', 'agents/gcivl_vib.py', lock_config=False)
 
 
 def main(_):
@@ -63,9 +63,9 @@ def main(_):
         'GCDataset': GCDataset,
         'HGCDataset': HGCDataset,
     }[config['dataset_class']]
-    train_dataset = dataset_class(Dataset.create(**train_dataset), config)
+    train_dataset = dataset_class(Dataset.create(norm=config['norm'], **train_dataset), config)
     if val_dataset is not None:
-        val_dataset = dataset_class(Dataset.create(**val_dataset), config)
+        val_dataset = dataset_class(Dataset.create(norm=config['norm'], **val_dataset), config)
 
     # Initialize agent.
     random.seed(FLAGS.seed)
@@ -79,23 +79,13 @@ def main(_):
     agent_class = agents[config['agent_name']]
     ex_goals = example_batch['actor_goals'] if config['oraclerep'] else None
 
-    if 'norm' in config['agent_name']:
-        agent = agent_class.create(
-            FLAGS.seed,
-            example_batch['observations'],
-            example_batch['actions'],
-            train_dataset.get_boundary_batch(),
-            config,
-            ex_goals=ex_goals
-        )
-    else:
-        agent = agent_class.create(
-            FLAGS.seed,
-            example_batch['observations'],
-            example_batch['actions'],
-            config,
-            ex_goals=ex_goals
-        )
+    agent = agent_class.create(
+        FLAGS.seed,
+        example_batch['observations'],
+        example_batch['actions'],
+        config,
+        ex_goals=ex_goals
+    )
 
     # Restore agent.
     if FLAGS.restore_path is not None:

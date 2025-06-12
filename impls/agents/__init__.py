@@ -9,7 +9,7 @@ from agents.gcivl_vib import GCIVLVIBAgent
 from agents.gcivl_cl import GCIVLCLAgent
 from agents.gcivl_hilp import GCIVLHILPAgent
 from agents.crl_hilp import CRLHILPAgent
-from agents.gcivl_norm import GCIVLNormAgent
+from agents.tra import TRAAgent
 
 agents = dict(
     crl=CRLAgent,
@@ -23,5 +23,5 @@ agents = dict(
     gcivl_cl=GCIVLCLAgent,
     gcivl_hilp=GCIVLHILPAgent,
     crl_hilp=CRLHILPAgent,
-    gcivl_norm=GCIVLNormAgent,
+    tra=TRAAgent
 )

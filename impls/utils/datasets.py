@@ -43,17 +43,24 @@ class Dataset(FrozenDict):
     """
 
     @classmethod
-    def create(cls, freeze=True, **fields):
+    def create(cls, freeze=True, norm=False, **fields):
         """Create a dataset from the fields.
 
         Args:
             freeze: Whether to freeze the arrays.
+            norm: Whether to normalize dataset variance (all dimensions range have a maximum difference of 1)
             **fields: Keys and values of the dataset.
         """
         data = fields
         assert 'observations' in data
         if freeze:
             jax.tree_util.tree_map(lambda arr: arr.setflags(write=False), data)
+        if norm:
+            mins, maxs = jax.tree_util.tree_map(lambda x: np.min(x, axis=0), data), jax.tree_util.tree_map(
+                lambda x: np.max(x, axis=0), data)
+            diff = jax.tree_util.tree_map(lambda max_val, min_val: max_val - min_val, maxs, mins)
+            data = jax.tree_util.tree_map(lambda batch, norm_factor: batch / norm_factor, data, diff)
+        jax.debug.print("We just got re-compiled!")
         return cls(data)
 
     def __init__(self, *args, **kwargs):
@@ -316,13 +323,6 @@ class GCDataset:
             cur_idxs = np.maximum(idxs - i, initial_state_idxs)
             rets.append(jax.tree_util.tree_map(lambda arr: arr[cur_idxs], self.dataset['observations']))
         return jax.tree_util.tree_map(lambda *args: np.concatenate(args, axis=-1), *rets)
-
-    def get_boundary_batch(self):
-        """ Return the boundary batch: batch that encodes the relative min and max of each dimension of each key in the batch."""
-        transitions = self.dataset._dict
-        mins = jax.tree_util.tree_map(lambda x: jnp.min(x, axis=0), transitions)
-        maxs = jax.tree_util.tree_map(lambda x: jnp.max(x, axis=0), transitions)
-        return mins, maxs
 
 
 @dataclasses.dataclass

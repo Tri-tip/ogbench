@@ -265,7 +265,7 @@ def get_config():
             # Agent hyperparameters.
             agent_name='gcivl_vib',  # Agent name.
             lr=3e-4,  # Learning rate.
-            batch_size=256,  # Batch size.
+            batch_size=1024,  # Batch size.
             actor_hidden_dims=(512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512),  # Value network hidden dimensions.
             goalrep_hidden_dims=(512, 512, 512),
@@ -278,7 +278,8 @@ def get_config():
             discrete=False,  # Whether the action space is discrete.
             encoder=None,  # Visual encoder name (None, 'impala_small', etc.).
             goal_encoder='vib',
-            actor_goalrep_grad=False, # Whether the actor gradients flow through the VIB encoder.
+            norm=False,
+            actor_goalrep_grad=True, # Whether the actor gradients flow through the VIB encoder.
             goalrep_dim = 256, # Dimension of the VIB's latent dimension.
             beta=0.01, # VIB strength hyperparameter.
             sg_encoder=False, # Whether the ViB takes in (g) or (s, g).

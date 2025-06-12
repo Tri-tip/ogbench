@@ -240,6 +240,7 @@ def get_config():
             const_std=True,  # Whether to use constant standard deviation for the actor.
             discrete=False,  # Whether the action space is discrete.
             encoder=None,  # Visual encoder name (None, 'impala_small', etc.).
+            norm=True,
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
             oraclerep=False,  # Whether to use oracle representations.
