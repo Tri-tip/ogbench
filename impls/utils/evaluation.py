@@ -44,6 +44,7 @@ def evaluate(
     video_frame_skip=3,
     eval_temperature=0,
     eval_gaussian=None,
+    diff = None
 ):
     """Evaluate the agent in the environment.
 
@@ -57,6 +58,7 @@ def evaluate(
         video_frame_skip: Number of frames to skip between renders.
         eval_temperature: Action sampling temperature.
         eval_gaussian: Standard deviation of the Gaussian noise to add to the actions.
+        diff: Difference factor passed in for normalization, if it is enabled.
 
     Returns:
         A tuple containing the statistics, trajectories, and rendered videos.
@@ -72,11 +74,19 @@ def evaluate(
 
         observation, info = env.reset(options=dict(task_id=task_id, render_goal=should_render))
         goal = info.get('goal')
+        if diff is not None:
+            if not config['oraclerep']:
+                goal = goal / diff['observations']
+            else:
+                goal = goal / diff['oracle_reps']
+
         goal_frame = info.get('goal_rendered')
         done = False
         step = 0
         render = []
         while not done:
+            if diff is not None:
+                observation = observation / diff['observations']
             action = actor_fn(observations=observation, goals=goal, temperature=eval_temperature)
             action = np.array(action)
             if not config.get('discrete'):

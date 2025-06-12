@@ -60,11 +60,13 @@ class Dataset(FrozenDict):
                 lambda x: np.max(x, axis=0), data)
             diff = jax.tree_util.tree_map(lambda max_val, min_val: max_val - min_val, maxs, mins)
             data = jax.tree_util.tree_map(lambda batch, norm_factor: batch / norm_factor, data, diff)
-        jax.debug.print("We just got re-compiled!")
-        return cls(data)
+        else:
+            diff = None
+        return cls(diff, data)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, diff=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.diff = diff
         self.size = get_size(self._dict)
         if 'valids' in self._dict:
             (self.valid_idxs,) = np.nonzero(self['valids'] > 0)
@@ -314,6 +316,9 @@ class GCDataset:
             return jax.tree_util.tree_map(lambda arr: arr[idxs], self.dataset['oracle_reps'])
         except KeyError:
             raise ValueError("Oracle representation is not supported in this environment.")
+
+    def get_diff(self):
+        return self.dataset.diff
 
     def get_stacked_observations(self, idxs):
         """Return the frame-stacked observations for the given indices."""
