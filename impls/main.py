@@ -47,7 +47,6 @@ def main(_):
 
     # Set up logger.
     exp_name = get_exp_name(FLAGS.seed)
-    wandb.init(mode='disabled')
     setup_wandb(project='goalrep', group=FLAGS.run_group, name=exp_name)
 
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
@@ -118,7 +117,7 @@ def main(_):
             train_logger.log(train_metrics, step=i)
 
         # Evaluate agent.
-        if i == 1000 or i % FLAGS.eval_interval == 0:
+        if i == 1 or i % FLAGS.eval_interval == 0:
             if FLAGS.eval_on_cpu:
                 eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
             else:
